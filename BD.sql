@@ -1,3 +1,4 @@
+DROP DATABASE IF EXISTS tienda;
 -- Crear la base de datos
 CREATE DATABASE tienda;
 USE tienda;
@@ -16,7 +17,15 @@ CREATE TABLE ventas (
     id_producto INT,
     cantidad INT,
     fecha_venta DATETIME DEFAULT CURRENT_TIMESTAMP,
+    en_promocion BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
+);
+
+CREATE TABLE log_precios (
+    id_log INT AUTO_INCREMENT PRIMARY KEY,
+    id_producto INT,
+    fecha_cambio DATETIME,
+    nuevo_precio DECIMAL(10,2)
 );
 
 -- Insertar algunos productos de ejemplo
