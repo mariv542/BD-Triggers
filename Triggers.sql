@@ -16,7 +16,7 @@ BEGIN
 END//
 DELIMITER ;
 
-DROP TRIGGER IF EXISTS TGR_ventas_INSERT_AFTER_actualizar_stock
+DROP TRIGGER IF EXISTS TGR_ventas_INSERT_AFTER_actualizar_stock;
 
 --2.	Crear un trigger que no permita realizar una venta si no hay suficiente stock.
     --Descripción: Si alguien intenta vender más unidades de un producto de las que están 
@@ -24,14 +24,14 @@ DROP TRIGGER IF EXISTS TGR_ventas_INSERT_AFTER_actualizar_stock
     --Tipo de Trigger: BEFORE INSERT
 
 DELIMITER //
-CREATE TRIGGER TGR_ventas_BEFORE_INSERT
+CREATE TRIGGER TGR_ventas_BEFORE_INSERT_validar_stock
 BEFORE INSERT
 ON ventas FOR EACH ROW 
 BEGIN
     DECLARE stock_actual INT;
 
     -- Obtener el stock actual del producto
-    SELECT stock INTO stock_actual
+    SELECT cantidad_stock INTO stock_actual
     FROM productos
     WHERE id_producto = NEW.id_producto;
 
@@ -40,10 +40,10 @@ BEGIN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Error: No hay suficiente stock para realizar la venta.';
     END IF;
-END;
+END//
 DELIMITER ;
 
-DROP TRIGGER TGR_productos_BEFORE_INSERT
+DROP TRIGGER IF EXISTS TGR_ventas_BEFORE_INSERT_validar_stock;
 
 --3.	Crear un trigger que actualice el precio del producto cuando se realice una venta.
     --Descripción: Cada vez que se registre una venta, si el precio del producto es superior
@@ -71,7 +71,7 @@ BEGIN
 END;
 DELIMITER ;
 
-DROP TRIGGER TGR_productos_AFTER_INSERT
+DROP TRIGGER TGR_productos_AFTER_INSERT;
 
 --4.	Crear un trigger que registre en una tabla de logs cada vez que se actualice el precio 
 --      de un producto.
@@ -93,7 +93,7 @@ BEGIN
 END;
 DELIMITER ;
 
-DROP TRIGGER TGR_log_precios_AFTER_UPDATE
+DROP TRIGGER TGR_log_precios_AFTER_UPDATE;
 
 --5.	Crear un trigger que actualice el stock después de eliminar una venta.
     --Descripción: Si una venta es eliminada de la tabla ventas, el stock del producto debe 
@@ -111,7 +111,7 @@ BEGIN
 END;
 DELIMITER ;
 
-DROP TRIGGER TGR_productos_AFTER_DELETE_actualizarStock_ventaEliminada
+DROP TRIGGER TGR_productos_AFTER_DELETE_actualizarStock_ventaEliminada;
 
 --6.	Crear un trigger que no permita eliminar productos si el stock es mayor a cero.
     --Descripción: Si el stock de un producto es mayor que cero, no se debe permitir eliminar ese
@@ -129,7 +129,7 @@ BEGIN
     END IF;
 DELIMITER ;
 
-DROP TRIGGER TGR_productos_BEFORE_DELETE_elimiarPRoductos_stockMayor0
+DROP TRIGGER TGR_productos_BEFORE_DELETE_elimiarPRoductos_stockMayor0;
 
 --7.	Crear un trigger que registre un mensaje en la consola cuando se intente realizar una venta 
 --      de un producto que no está en stock.
@@ -157,7 +157,7 @@ BEGIN
 END;
 DELIMITER ;
 
-DROP TRIGGER TGR_productos_BEFORE_INSERT_mensajeAdvertencia_insuficiente
+DROP TRIGGER TGR_productos_BEFORE_INSERT_mensajeAdvertencia_insuficiente;
 
 --8.	Crear un trigger que registre un mensaje cuando el stock de un producto alcance cero.
     --Descripción: Si el stock de un producto llega a cero después de una venta, se debe imprimir 
@@ -184,7 +184,7 @@ BEGIN
 END;
 DELIMITER ;
 
-DROP TRIGGER TGR_productos_AFTER_INSERT_mensajeAdvertensia_agotado
+DROP TRIGGER TGR_productos_AFTER_INSERT_mensajeAdvertensia_agotado;
 
 --9.	Crear un trigger que, si el precio de un producto baja por debajo de $5, lo marque como 
 --      "en promoción".
@@ -206,7 +206,7 @@ BEGIN
 END;
 DELIMITER ;
 
-DROP TRIGGER TGR_productos_AFTER_UPDATE_crearCampo
+DROP TRIGGER TGR_productos_AFTER_UPDATE_crearCampo;
 
 --10.	 Crear un trigger que, después de insertar una venta, calcule el total de la venta y 
 --       lo registre en una tabla total_ventas.
@@ -236,4 +236,4 @@ BEGIN
 END;
 DELIMITER ;
 
-DROP TRIGGER TGR_ventas_AFTER_INSERT_crearTabla
+DROP TRIGGER TGR_ventas_AFTER_INSERT_crearTabla;
