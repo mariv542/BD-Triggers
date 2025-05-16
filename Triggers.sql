@@ -81,7 +81,7 @@ DROP TRIGGER IF EXISTS TGR_productos_AFTER_INSERT_aumentar_precio;
 
 -- ojito creacion de tabla log_precios
 DELIMITER //
-CREATE TRIGGER TGR_logPrecios_AFTER_UPDATE_crearTabla
+CREATE TRIGGER TGR_productos_AFTER_UPDATE_log_precios
 AFTER UPDATE
 ON productos FOR EACH ROW 
 BEGIN
@@ -90,10 +90,10 @@ BEGIN
         INSERT INTO log_precios (id_producto, fecha_cambio, nuevo_precio)
         VALUES (NEW.id_producto, NOW(), NEW.precio);
     END IF;
-END;
+END//
 DELIMITER ;
 
-DROP TRIGGER TGR_log_precios_AFTER_UPDATE;
+DROP TRIGGER TGR_productos_AFTER_UPDATE_log_precios;
 
 --5.	Crear un trigger que actualice el stock después de eliminar una venta.
     --Descripción: Si una venta es eliminada de la tabla ventas, el stock del producto debe 

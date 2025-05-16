@@ -36,6 +36,21 @@ SELECT id_producto, nombre, precio FROM productos WHERE id_producto = 3;
 ---------------------------------------------------------------------------------------------
 --Prueba 4
 
+-- Ver producto a modificar
+SELECT id_producto, nombre, precio FROM productos WHERE id_producto = 1;
+
+-- Actualizar precio (debe activar el trigger)
+UPDATE productos SET precio = 17.50 WHERE id_producto = 1;
+
+-- Verificar registro en log_precios
+SELECT * FROM log_precios WHERE id_producto = 1;
+
+-- Actualizar otro campo sin cambiar precio (no debe activar registro)
+UPDATE productos SET nombre = 'Camiseta deportiva' WHERE id_producto = 1;
+
+-- Verificar que no hay nuevo registro en log_precios
+SELECT * FROM log_precios WHERE id_producto = 1;
+
 ---------------------------------------------------------------------------------------------
 --Prueba 5
 
