@@ -101,17 +101,17 @@ DROP TRIGGER TGR_productos_AFTER_UPDATE_log_precios;
     --Tipo de Trigger: AFTER DELETE
 
 DELIMITER //
-CREATE TRIGGER TGR_ventas_AFTER_DELETE_actualizarStock_ventaEliminada
+CREATE TRIGGER TGR_ventas_AFTER_DELETE_actualizarStock_restaurar_stock
 AFTER DELETE
 ON ventas FOR EACH ROW 
 BEGIN
     UPDATE productos
-    SET stock = stock + OLD.cantidad
+    SET cantidad_stock = cantidad_stock + OLD.cantidad
     WHERE id_producto = OLD.id_producto;
-END;
+END//
 DELIMITER ;
 
-DROP TRIGGER TGR_productos_AFTER_DELETE_actualizarStock_ventaEliminada;
+DROP TRIGGER TGR_productos_AFTER_DELETE_actualizarStock_restaurar_stock;
 
 --6.	Crear un trigger que no permita eliminar productos si el stock es mayor a cero.
     --Descripción: Si el stock de un producto es mayor que cero, no se debe permitir eliminar ese
@@ -119,17 +119,18 @@ DROP TRIGGER TGR_productos_AFTER_DELETE_actualizarStock_ventaEliminada;
     --Tipo de Trigger: BEFORE DELETE
 
 DELIMITER //
-CREATE TRIGGER TGR_productos_BEFORE_DELETE_elimiarPRoductos_stockMayor0
+CREATE TRIGGER TGR_productos_BEFORE_DELETE_bloquear_si_tiene_stock
 BEFORE DELETE
 ON productos FOR EACH ROW 
 BEGIN
-    IF OLD.stock > 0 THEN
+    IF OLD.cantidad_stock > 0 THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'No se puede eliminar el producto porque aún tiene stock disponible.';
     END IF;
+END //    
 DELIMITER ;
 
-DROP TRIGGER TGR_productos_BEFORE_DELETE_elimiarPRoductos_stockMayor0;
+DROP TRIGGER TGR_productos_BEFORE_DELETE_bloquear_si_tiene_stock;
 
 --7.	Crear un trigger que registre un mensaje en la consola cuando se intente realizar una venta 
 --      de un producto que no está en stock.
@@ -138,26 +139,27 @@ DROP TRIGGER TGR_productos_BEFORE_DELETE_elimiarPRoductos_stockMayor0;
     --Tipo de Trigger: BEFORE INSERT
 
 DELIMITER //
-CREATE TRIGGER TGR_ventas_BEFORE_INSERT_mensajeAdvertencia_insuficiente
+CREATE TRIGGER TGR_ventas_BEFORE_INSERT_advertencia_insuficiente
 BEFORE INSERT
 ON ventas FOR EACH ROW 
 BEGIN
-    DECLARE stock_actual INT;
+    DECLARE stock_disponible INT;
+    DECLARE nombre_producto VARCHAR(255);
 
-    -- Obtener el stock actual del producto
-    SELECT stock INTO stock_actual
-    FROM productos
-    WHERE id_producto = NEW.id_producto;
+    -- Obtener stock y nombre del producto
+    SELECT p.cantidad_stock, p.nombre INTO stock_disponible, nombre_producto
+    FROM productos p
+    WHERE p.id_producto = NEW.id_producto;
 
-    -- Si no hay stock suficiente, lanzar advertencia
-    IF stock_actual < NEW.cantidad THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Advertencia: No hay suficiente stock para realizar la venta.';
+    -- Verificar stock insuficiente
+    IF stock_disponible < NEW.cantidad THEN
+        SIGNAL SQLSTATE '01000' -- Código para warning (no error)
+        SET MESSAGE_TEXT = 'Advertencia: Stock insuficiente para la venta';
     END IF;
-END;
+END//
 DELIMITER ;
 
-DROP TRIGGER TGR_productos_BEFORE_INSERT_mensajeAdvertencia_insuficiente;
+DROP TRIGGER TGR_productos_BEFORE_INSERT_advertencia_insuficiente;
 
 --8.	Crear un trigger que registre un mensaje cuando el stock de un producto alcance cero.
     --Descripción: Si el stock de un producto llega a cero después de una venta, se debe imprimir 
@@ -165,26 +167,27 @@ DROP TRIGGER TGR_productos_BEFORE_INSERT_mensajeAdvertencia_insuficiente;
     --Tipo de Trigger: AFTER INSERT
 
 DELIMITER //
-CREATE TRIGGER TGR_ventas_AFTER_INSERT_mensajeAdvertensia_agotado
+CREATE TRIGGER TGR_ventas_AFTER_INSERT_notificar_agotado
 AFTER INSERT
 ON ventas FOR EACH ROW 
 BEGIN
     DECLARE stock_actual INT;
+    DECLARE nombre_producto VARCHAR(100);
 
-    -- Obtener el stock actual del producto después de la venta
-    SELECT stock INTO stock_actual
-    FROM productos
-    WHERE id_producto = NEW.id_producto;
+    -- Obtener stock y nombre actual del producto
+    SELECT p.cantidad_stock, p.nombre INTO stock_actual, nombre_producto
+    FROM productos p
+    WHERE p.id_producto = NEW.id_producto;
 
     -- Si el stock llegó a cero, lanzar advertencia
     IF stock_actual = 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Atención: El producto se ha agotado después de esta venta.';
+        SIGNAL SQLSTATE '45000' -- Código para warning (no error)
+        SET MESSAGE_TEXT = 'Atención: El producto se a agotado despues de la venta';
     END IF;
-END;
+END//
 DELIMITER ;
 
-DROP TRIGGER TGR_productos_AFTER_INSERT_mensajeAdvertensia_agotado;
+DROP TRIGGER TGR_ventas_AFTER_INSERT_notificar_agotado;
 
 --9.	Crear un trigger que, si el precio de un producto baja por debajo de $5, lo marque como 
 --      "en promoción".
@@ -193,20 +196,19 @@ DROP TRIGGER TGR_productos_AFTER_INSERT_mensajeAdvertensia_agotado;
     --Tipo de Trigger: AFTER UPDATE
 
 DELIMITER //
-CREATE TRIGGER TGR_productos_AFTER_UPDATE_enPRomocion
+CREATE TRIGGER TGR_productos_AFTER_UPDATE_marcar_promocion
 AFTER UPDATE
-ON productos FOR EACH ROW 
+ON productos FOR EACH ROW
 BEGIN
-    -- Si el precio bajó y está por debajo de $5, activar promoción
-    IF NEW.precio < 5 AND NEW.precio <> OLD.precio THEN
-        UPDATE productos
-        SET en_promocion = TRUE
-        WHERE id_producto = NEW.id_producto;
+    -- Verificar si el precio bajó de $5 y cambió realmente
+    IF NEW.precio < 5 AND NEW.precio < OLD.precio THEN
+        SIGNAL SQLSTATE '01000' 
+        SET MESSAGE_TEXT = '¡Oferta! Producto con descuento ';
     END IF;
-END;
+END//
 DELIMITER ;
 
-DROP TRIGGER TGR_productos_AFTER_UPDATE_crearCampo;
+DROP TRIGGER TGR_productos_AFTER_UPDATE_marcar_promocion;
 
 --10.	 Crear un trigger que, después de insertar una venta, calcule el total de la venta y 
 --       lo registre en una tabla total_ventas.
@@ -215,25 +217,28 @@ DROP TRIGGER TGR_productos_AFTER_UPDATE_crearCampo;
     --Tipo de Trigger: AFTER INSERT
  
 DELIMITER //
-CREATE TRIGGER TGR_ventas_AFTER_INSERT_crearTabla
+CREATE TRIGGER TGR_ventas_AFTER_INSERT_calcular_total
 AFTER INSERT
 ON ventas FOR EACH ROW 
 BEGIN
     DECLARE precio_unitario DECIMAL(10,2);
+    DECLARE nombre_producto VARCHAR(100);
     DECLARE total DECIMAL(10,2);
 
-    -- Obtener el precio actual del producto
-    SELECT precio INTO precio_unitario
-    FROM productos
-    WHERE id_producto = NEW.id_producto;
+    -- Obtener precio y nombre del producto
+    SELECT p.precio, p.nombre INTO precio_unitario, nombre_producto
+    FROM productos p
+    WHERE p.id_producto = NEW.id_producto;
 
     -- Calcular el total
     SET total = precio_unitario * NEW.cantidad;
 
-    -- Insertar en la tabla total_ventas
-    INSERT INTO total_ventas (id_venta, id_producto, total, fecha)
-    VALUES (NEW.id_venta, NEW.id_producto, total, NOW());
-END;
+    -- Insertar en total_ventas (usando LAST_INSERT_ID() por si acaso)
+    INSERT INTO total_ventas (id_venta, id_producto, nombre_producto, total, fecha)
+    VALUES (NEW.id_venta, NEW.id_producto, nombre_producto, total, NEW.fecha_venta);
+END//
 DELIMITER ;
 
-DROP TRIGGER TGR_ventas_AFTER_INSERT_crearTabla;
+-- Para eliminar el trigger (forma correcta)
+DROP TRIGGER IF EXISTS TGR_ventas_AFTER_INSERT_calcular_total;
+
