@@ -13,3 +13,9 @@
 
 --
 ## TRIGGER ejercicio 3
+
+![BD](img/3.png)
+
+--
+## TRIGGER ejercicio 4
+

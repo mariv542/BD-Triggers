@@ -24,6 +24,15 @@ SELECT * FROM ventas WHERE id_producto = 1 AND cantidad = 1000;
 ---------------------------------------------------------------------------------------------
 --Prueba 3
 
+-- Ver producto con precio > $40
+SELECT id_producto, nombre, precio FROM productos WHERE precio > 40;
+
+-- Insertar venta para este producto
+INSERT INTO ventas (id_producto, cantidad) VALUES (3, 1);  -- Zapatos ($50)
+
+-- Verificar aumento de precio
+SELECT id_producto, nombre, precio FROM productos WHERE id_producto = 3;
+
 ---------------------------------------------------------------------------------------------
 --Prueba 4
 

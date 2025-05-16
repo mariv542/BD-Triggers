@@ -51,13 +51,13 @@ DROP TRIGGER IF EXISTS TGR_ventas_BEFORE_INSERT_validar_stock;
     --Tipo de Trigger: AFTER INSERT
 
 DELIMITER //
-CREATE TRIGGER TGR_ventas_AFTER_INSERT
+CREATE TRIGGER TGR_ventas_AFTER_INSERT_aumentar_precio
 AFTER INSERT
 ON ventas FOR EACH ROW 
 BEGIN
     DECLARE precio_actual DECIMAL(10,2);
 
-    -- Obtener el precio actual del producto
+    -- Obtiene el precio actual del producto
     SELECT precio INTO precio_actual
     FROM productos
     WHERE id_producto = NEW.id_producto;
@@ -66,12 +66,12 @@ BEGIN
     IF precio_actual > 40 THEN
         UPDATE productos
         SET precio = precio_actual * 1.05
-        WHERE id_producto = NEW.id_producto;
+        WHERE id_producto = NEW.id_producto; 
     END IF;
-END;
+END//
 DELIMITER ;
 
-DROP TRIGGER TGR_productos_AFTER_INSERT;
+DROP TRIGGER IF EXISTS TGR_productos_AFTER_INSERT_aumentar_precio;
 
 --4.	Crear un trigger que registre en una tabla de logs cada vez que se actualice el precio 
 --      de un producto.
